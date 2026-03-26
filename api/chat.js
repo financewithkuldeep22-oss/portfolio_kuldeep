@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function (req, res) {
   // 1. CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*'); 
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Message is required' });
   }
 
-  // 2. Security Check: Is the Vercel API Key actually loading?
+  // 2. API Key Check
   const apiKey = process.env.GROK_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ 
@@ -30,11 +30,11 @@ export default async function handler(req, res) {
   const systemPrompt = `
     You are an expert sales assistant for Kuldeep Singh Bisht, a premium freelance web developer.
     Recommend the Business Website Plan (₹18,000) and mention the April Special Discount.
-    Push them to use the WhatsApp button. Keep it under 2-3 sentences.
+    Push them to use the WhatsApp button. Keep it concise.
   `;
 
   try {
-    // 3. Direct Call to Grok's primary stable model
+    // 3. Call Grok API
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
         "Authorization": `Bearer ${apiKey}` 
       },
       body: JSON.stringify({
-        model: "grok-2-latest", // Standard, most stable x.ai model
+        model: "grok-2-latest", 
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: message }
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // 4. IF GROK REJECTS IT, SEND THE EXACT ERROR TO THE FRONTEND
+    // 4. Send exact error to frontend if Grok fails
     if (!response.ok) {
       return res.status(response.status).json({ 
         error: "Grok API Rejected the Request", 
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 5. SUCCESS! Send the AI reply back
+    // 5. Send AI reply back
     const aiReply = data.choices[0].message.content;
     return res.status(200).json({ reply: aiReply });
 
@@ -71,4 +71,4 @@ export default async function handler(req, res) {
       details: error.message 
     });
   }
-}
+};
