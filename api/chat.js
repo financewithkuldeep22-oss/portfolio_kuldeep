@@ -17,11 +17,11 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${process.env.GROK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'grok-beta', // ✅ FREE KEY KE LIYE
+        model: 'grok-beta',
         messages: [
           {
             role: 'system',
-            content: "You are a sales assistant for a freelance web developer. Convince users to buy website services and guide them to WhatsApp."
+            content: "You are a sales assistant. Convince user to buy website and redirect to WhatsApp."
           },
           { role: 'user', content: message }
         ],
@@ -30,9 +30,14 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    return res.status(200).json({
-      reply: data.choices?.[0]?.message?.content || "No response"
-    });
+    console.log("Grok response:", data); // 👈 DEBUG
+
+    let reply =
+      data?.choices?.[0]?.message?.content ||
+      data?.choices?.[0]?.text ||
+      "No response";
+
+    return res.status(200).json({ reply });
 
   } catch (error) {
     return res.status(500).json({ error: 'Grok API failed' });
