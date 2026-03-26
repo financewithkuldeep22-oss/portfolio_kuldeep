@@ -404,17 +404,17 @@
 <body class="smooth-scroll">
 
 <div class="discount-banner" style="display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;">
-  <span>🔥 April Special Discount — Ends in:</span>
+  <span>🔥 Special Discount — Ends in:</span>
   <span id="countdown-timer" style="font-size:1rem;letter-spacing:0.08em;font-family:'Playfair Display',serif;">
     Loading...
   </span>
 </div>
 <script>
   (function(){
-    const deadline = new Date("2025-04-30T23:59:59");
+    const deadline = new Date("2026-04-30T23:59:59");
     function tick(){
       const diff = deadline - new Date();
-      if(diff <= 0){ document.getElementById("countdown-timer").textContent = "OFFER EXPIRED"; return; }
+      if(diff <= 0){ document.getElementById("countdown-timer").textContent = "LIMITED TIME OFFER"; return; }
       const d = Math.floor(diff/86400000);
       const h = Math.floor((diff%86400000)/3600000);
       const m = Math.floor((diff%3600000)/60000);
@@ -553,7 +553,7 @@
 <section id="pricing" style="background: var(--bg2);">
   <div class="section-label reveal" style="justify-content: center; margin-bottom: 0;">Investment</div>
   <h2 class="section-title reveal" style="text-align: center;">Clear Pricing, <em>High ROI</em></h2>
-  <p class="reveal delay-1" style="text-align:center; color: var(--gold); margin-bottom: 2rem; font-weight: 500;">April Offer Price — Special discount if booked before 30 April</p>
+  <p class="reveal delay-1" style="text-align:center; color: var(--gold); margin-bottom: 2rem; font-weight: 500;">Special Offer Price — Special discount if booked before the deadline</p>
   
   <div class="pricing-wrapper reveal delay-1">
     
