@@ -1238,6 +1238,32 @@ window.open(`https://wa.me/917505122769?text=${encodeURIComponent(waText)}`, '_b
   chatInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleChat();
   });
+  async function submitLead() {
+  const name  = document.getElementById("lead-name").value.trim();
+  const phone = document.getElementById("lead-phone").value.trim();
+  const email = document.getElementById("lead-email").value.trim();
+
+  if (!name) {
+    document.getElementById("lead-error").style.display = "block";
+    return;
+  }
+
+  try {
+    await fetch("/api/save-lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name, phone, email,
+        source: "popup_lead",
+        timestamp: new Date().toISOString()
+      })
+    });
+  } catch (e) {
+    console.error(e);
+  }
+
+  document.getElementById("lead-popup").style.display = "none";
+}
 </script>
 
 <!-- ─── FIREBASE VISITOR TRACKER ─── -->
@@ -1291,5 +1317,26 @@ trackVisitor();
 </script>
 
 </body>
+  <!-- LEAD POPUP START -->
+<div id="lead-popup" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;">
+  <div style="background:#0c121d;padding:25px;border-radius:12px;width:320px;text-align:center;border:1px solid rgba(212,172,88,0.3);">
+    <h2 style="color:#d4ac58;margin-bottom:10px;">Welcome 👋</h2>
+
+    <input id="lead-name" placeholder="Your Name *" style="width:100%;padding:10px;margin-bottom:10px;background:#070a10;border:1px solid #333;color:#fff;border-radius:6px;" />
+
+    <input id="lead-phone" placeholder="Phone (optional)" style="width:100%;padding:10px;margin-bottom:10px;background:#070a10;border:1px solid #333;color:#fff;border-radius:6px;" />
+
+    <input id="lead-email" placeholder="Email (optional)" style="width:100%;padding:10px;margin-bottom:15px;background:#070a10;border:1px solid #333;color:#fff;border-radius:6px;" />
+
+    <button onclick="submitLead()" style="width:100%;padding:10px;background:#d4ac58;border:none;border-radius:6px;font-weight:bold;cursor:pointer;">
+      Continue
+    </button>
+
+    <p id="lead-error" style="color:red;font-size:12px;margin-top:8px;display:none;">
+      Name is required
+    </p>
+  </div>
+</div>
+<!-- LEAD POPUP END -->
 </html>
 </html>
