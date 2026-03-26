@@ -13,7 +13,13 @@ module.exports = async function (req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { message } = req.body;
+  // Safe Body Parsing
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) {}
+  }
+  
+  const message = body?.message;
   if (!message) {
     return res.status(400).json({ error: 'Message is required' });
   }
@@ -23,18 +29,18 @@ module.exports = async function (req, res) {
   if (!apiKey) {
     return res.status(500).json({ 
       error: "API Key Missing", 
-      details: "The GROK_API_KEY is not set in Vercel Environment Variables." 
+      details: "The GROK_API_KEY is not set in Vercel." 
     });
   }
 
   const systemPrompt = `
     You are an expert sales assistant for Kuldeep Singh Bisht, a premium freelance web developer.
     Recommend the Business Website Plan (₹18,000) and mention the April Special Discount.
-    Push them to use the WhatsApp button. Keep it concise.
+    Push them to use the WhatsApp button. Keep it under 2-3 sentences.
   `;
 
   try {
-    // 3. Call Grok API
+    // 3. Call Grok API (Updated to the active 2026 model)
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -42,7 +48,7 @@ module.exports = async function (req, res) {
         "Authorization": `Bearer ${apiKey}` 
       },
       body: JSON.stringify({
-        model: "grok-2-latest", 
+        model: "grok-3-mini", // <--- YAHAN CHANGE KIYA HAI (Naya model)
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: message }
