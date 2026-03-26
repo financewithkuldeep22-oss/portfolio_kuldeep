@@ -1096,13 +1096,16 @@
     URL.revokeObjectURL(url);
   });
 
-  // ─── CHATBOT LOGIC ───
+  // ─── CHATBOT LOGIC WITH MEMORY ───
   const chatFab = document.getElementById('chat-fab');
   const chatWidget = document.getElementById('ai-chat-widget');
   const closeChat = document.getElementById('close-chat');
   const chatBody = document.getElementById('chat-body');
   const chatInput = document.getElementById('chat-input');
   const sendChatBtn = document.getElementById('send-chat');
+
+  // Memory Array: Isme hum bot aur user ki baatein save karenge
+  let chatHistory = [];
 
   // Toggle Chat
   chatFab.addEventListener('click', () => chatWidget.classList.add('active'));
@@ -1120,11 +1123,11 @@
     chatBody.scrollTop = chatBody.scrollHeight;
   }
 
-  // Fallback Sales Responses (If Grok fails)
+  // Fallback Sales Responses
   const fallbackResponses = [
-    "That sounds like a great project. To give you the best ROI, I highly recommend our **Business Website Plan (₹18,000)**. It includes everything you need to convert visitors.",
-    "I can definitely help with that. Right now, I have an **April Special Discount** running until the 30th. Would you like to discuss the requirements on WhatsApp?",
-    "Perfect. I specialize in exactly this type of system. <br><a href='https://wa.me/917505122769?text=Hi%20Kuldeep,%20I%20am%20chatting%20with%20your%20AI%20and%20want%20to%20proceed!' target='_blank' class='chat-wa-btn'>Chat with Kuldeep on WhatsApp</a>"
+    "That sounds like a great project. To give you the best ROI, I highly recommend our **Business Website Plan (₹18,000)**.",
+    "I can definitely help with that. Right now, I have an **April Special Discount** running until the 30th.",
+    "Let's discuss this directly! <br><a href='https://wa.me/917505122769?text=Hi%20Kuldeep,%20I%20am%20chatting%20with%20your%20AI%20and%20want%20to%20proceed!' target='_blank' class='chat-wa-btn'>Chat with Kuldeep on WhatsApp</a>"
   ];
   let fallbackIndex = 0;
 
@@ -1132,23 +1135,29 @@
     const message = chatInput.value.trim();
     if (!message) return;
 
-    // Show user message
+    // 1. User ka message UI par dikhao aur input clear karo
     appendMessage(message, 'user');
     chatInput.value = '';
+
+    // 2. User ka message History mein save karo (Gemini format mein)
+    chatHistory.push({
+      role: "user",
+      parts: [{ text: message }]
+    });
 
     // Show typing indicator
     const typingDiv = document.createElement('div');
     typingDiv.className = 'message bot typing';
-    typingDiv.textContent = 'Kuldeep\'s AI is typing...';
+    typingDiv.textContent = 'KSB AI is typing...';
     chatBody.appendChild(typingDiv);
     chatBody.scrollTop = chatBody.scrollHeight;
 
     try {
-      // Calling your existing Vercel API
+      // 3. Backend ko sirf message nahi, PURI HISTORY bhejo
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message })
+        body: JSON.stringify({ history: chatHistory }) 
       });
 
       if (!response.ok) throw new Error("API returned an error");
@@ -1156,22 +1165,27 @@
       const data = await response.json();
       typingDiv.remove();
       
-      // Check if Grok sent a valid response
-      if (data && data.reply && data.reply !== "No response") {
+      if (data && data.reply) {
+        // 4. Bot ka reply UI par dikhao
         appendMessage(data.reply, 'bot');
+        
+        // 5. Bot ka reply History mein save karo taaki context rahe
+        chatHistory.push({
+          role: "model",
+          parts: [{ text: data.reply }]
+        });
+
       } else {
-        throw new Error("Empty response from Grok");
+        throw new Error("Empty response");
       }
 
     } catch (error) {
       console.error("Chat Error:", error);
       typingDiv.remove();
       
-      // FIRE THE FALLBACK SALES LOGIC
+      // FIRE THE FALLBACK
       const fallbackMsg = fallbackResponses[fallbackIndex % fallbackResponses.length];
       fallbackIndex++;
-      
-      // We pass 'true' as the third argument so HTML (like the WhatsApp button) renders
       appendMessage(fallbackMsg, 'bot', true); 
     }
   }
