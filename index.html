@@ -1194,7 +1194,42 @@
   sendChatBtn.addEventListener('click', handleChat);
   chatInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') handleChat();
-  });
+  });<!-- ─── FIREBASE VISITOR TRACKER ─── -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, updateDoc, increment }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDblBFQODbj_c2OdPEH0ieKOrIpY3srjm4",
+    authDomain: "portfolio-tracker-55a47.firebaseapp.com",
+    projectId: "portfolio-tracker-55a47",
+    storageBucket: "portfolio-tracker-55a47.firebasestorage.app",
+    messagingSenderId: "717654387803",
+    appId: "1:717654387803:web:8288cfbfac42dc5177a37e"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  async function trackVisitor() {
+    try {
+      const ref  = doc(db, "analytics", "visitor_count");
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        await updateDoc(ref, { count: increment(1) });
+      } else {
+        await setDoc(ref, { count: 1 });
+      }
+      console.log("✅ Visitor tracked!");
+    } catch (e) {
+      console.error("Visitor tracking error:", e);
+    }
+  }
+
+  trackVisitor();
 </script>
+
 </body>
+</html>
 </html>
