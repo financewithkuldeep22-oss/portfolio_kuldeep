@@ -1,1 +1,319 @@
 const ADMIN_PASSWORD = "ksb@admin2025";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSB Admin — Leads Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #070a10; color: #f0e6d6; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6; }
+
+  /* ── LOGIN SCREEN ── */
+  #login-screen { position: fixed; inset: 0; background: #070a10; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .login-box { background: #0c121d; border: 1.5px solid rgba(212,172,88,0.3); border-radius: 12px; padding: 2.5rem; width: 340px; text-align: center; }
+  .login-box h2 { font-family: 'Playfair Display', serif; color: #d4ac58; margin-bottom: 0.4rem; }
+  .login-box p  { color: #9c9181; font-size: 0.8rem; margin-bottom: 1.5rem; }
+  .login-box input { width: 100%; padding: 12px; background: #070a10; border: 1.5px solid rgba(212,172,88,0.2); border-radius: 6px; color: #f0e6d6; font-size: 0.9rem; outline: none; margin-bottom: 1rem; }
+  .login-box input:focus { border-color: #d4ac58; }
+  .login-box button { width: 100%; padding: 12px; background: linear-gradient(135deg,#d4ac58,#a48235); border: none; border-radius: 6px; color: #070a10; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+  .login-box .err { color: #ff6b6b; font-size: 0.78rem; margin-top: 0.5rem; display: none; }
+
+  /* ── DASHBOARD ── */
+  #dashboard { display: none; }
+  header { background: #0c121d; border-bottom: 1.5px solid rgba(212,172,88,0.2); padding: 14px 5%; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: #d4ac58; }
+  .logout-btn { padding: 7px 16px; background: transparent; border: 1.5px solid rgba(212,172,88,0.4); border-radius: 4px; color: #9c9181; cursor: pointer; font-size: 0.78rem; transition: 0.3s; }
+  .logout-btn:hover { border-color: #d4ac58; color: #d4ac58; }
+
+  .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.5rem 5%; }
+  .stat-card { background: #0c121d; border: 1.5px solid rgba(212,172,88,0.15); border-radius: 10px; padding: 1.2rem; text-align: center; }
+  .stat-num  { font-family: 'Playfair Display', serif; font-size: 2rem; color: #d4ac58; line-height: 1; margin-bottom: 4px; }
+  .stat-label{ font-size: 0.75rem; color: #9c9181; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  .tabs { display: flex; gap: 4px; padding: 0 5% 0; border-bottom: 1.5px solid rgba(212,172,88,0.1); }
+  .tab  { padding: 10px 20px; cursor: pointer; font-size: 0.82rem; color: #9c9181; border-bottom: 2px solid transparent; transition: 0.3s; font-weight: 500; }
+  .tab.active, .tab:hover { color: #d4ac58; border-bottom-color: #d4ac58; }
+
+  .content { padding: 1.5rem 5%; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1.5px solid rgba(212,172,88,0.1); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  thead { background: #0c121d; }
+  th { padding: 12px 16px; text-align: left; color: #d4ac58; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; white-space: nowrap; }
+  td { padding: 12px 16px; border-top: 1px solid rgba(212,172,88,0.06); vertical-align: top; }
+  tr:hover td { background: rgba(212,172,88,0.03); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 50px; font-size: 0.68rem; font-weight: 600; }
+  .badge-chat    { background: rgba(212,172,88,0.12); color: #d4ac58; border: 1px solid rgba(212,172,88,0.3); }
+  .badge-contact { background: rgba(37,211,102,0.12); color: #25D366;  border: 1px solid rgba(37,211,102,0.3); }
+  .msg-cell { max-width: 280px; word-break: break-word; }
+  .msg-cell .user-msg { color: #f0e6d6; margin-bottom: 4px; }
+  .msg-cell .bot-msg  { color: #9c9181; font-size: 0.8rem; font-style: italic; }
+  .time-cell { color: #9c9181; white-space: nowrap; font-size: 0.78rem; }
+  .empty { text-align: center; padding: 3rem; color: #9c9181; }
+  .loading { text-align: center; padding: 2rem; color: #9c9181; }
+
+  /* ── SEARCH & FILTER ── */
+  .toolbar { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
+  .search-box { flex: 1; min-width: 200px; padding: 9px 14px; background: #0c121d; border: 1.5px solid rgba(212,172,88,0.2); border-radius: 6px; color: #f0e6d6; font-size: 0.85rem; outline: none; }
+  .search-box:focus { border-color: #d4ac58; }
+  .refresh-btn { padding: 9px 18px; background: rgba(212,172,88,0.1); border: 1.5px solid rgba(212,172,88,0.3); border-radius: 6px; color: #d4ac58; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: 0.3s; }
+  .refresh-btn:hover { background: rgba(212,172,88,0.2); }
+
+  @media (max-width: 768px) {
+    .stats-bar { grid-template-columns: repeat(2,1fr); }
+    .msg-cell { max-width: 160px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>KSB Admin</h2>
+    <p>Enter admin password to continue</p>
+    <input type="password" id="pass-input" placeholder="Password" onkeypress="if(event.key==='Enter') doLogin()">
+    <button onclick="doLogin()">Login</button>
+    <p class="err" id="login-err">Wrong password. Try again.</p>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboard">
+  <header>
+    <div class="logo">KSB<span style="color:#9c9181;">.</span> Admin</div>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </header>
+
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-visitors">—</div>
+      <div class="stat-label">Total Visitors</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-chats">—</div>
+      <div class="stat-label">Chat Leads</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-contacts">—</div>
+      <div class="stat-label">Contact Forms</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-today">—</div>
+      <div class="stat-label">Today's Activity</div>
+    </div>
+  </div>
+
+  <div style="padding: 0 5%;">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('chats', this)">Chat Leads</div>
+      <div class="tab" onclick="switchTab('contacts', this)">Contact Forms</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="toolbar">
+      <input class="search-box" id="search-input" placeholder="Search messages..." oninput="filterTable()">
+      <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    </div>
+
+    <!-- CHAT LEADS TABLE -->
+    <div id="tab-chats">
+      <div class="table-wrap">
+        <table id="chats-table">
+          <thead><tr>
+            <th>#</th>
+            <th>User Message</th>
+            <th>Bot Reply</th>
+            <th>Time</th>
+            <th>Source</th>
+          </tr></thead>
+          <tbody id="chats-body">
+            <tr><td colspan="5" class="loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CONTACT FORMS TABLE -->
+    <div id="tab-contacts" style="display:none;">
+      <div class="table-wrap">
+        <table id="contacts-table">
+          <thead><tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Plan</th>
+            <th>Message</th>
+            <th>Signature</th>
+            <th>Time</th>
+          </tr></thead>
+          <tbody id="contacts-body">
+            <tr><td colspan="7" class="loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── CONFIG ──
+  const ADMIN_PASSWORD  = "ksb@admin2025";   // <-- apna password yahan change karo
+  const PROJECT_ID      = "portfolio-tracker-55a47";
+  const FIRESTORE_URL   = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+
+  // ── LOGIN ──
+  function doLogin() {
+    const val = document.getElementById("pass-input").value;
+    if (val === ADMIN_PASSWORD) {
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("dashboard").style.display    = "block";
+      loadData();
+    } else {
+      document.getElementById("login-err").style.display = "block";
+      document.getElementById("pass-input").value = "";
+    }
+  }
+  function doLogout() {
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("dashboard").style.display    = "none";
+    document.getElementById("pass-input").value = "";
+  }
+
+  // ── TAB SWITCH ──
+  function switchTab(tab, el) {
+    document.getElementById("tab-chats").style.display    = tab === "chats"    ? "block" : "none";
+    document.getElementById("tab-contacts").style.display = tab === "contacts" ? "block" : "none";
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    el.classList.add("active");
+  }
+
+  // ── FETCH FIRESTORE COLLECTION ──
+  async function fetchCollection(name) {
+    try {
+      const res  = await fetch(`${FIRESTORE_URL}/${name}?pageSize=200`);
+      const data = await res.json();
+      return data.documents || [];
+    } catch (e) {
+      console.error("Fetch error:", e);
+      return [];
+    }
+  }
+
+  // ── FETCH VISITOR COUNT ──
+  async function fetchVisitorCount() {
+    try {
+      const res  = await fetch(`${FIRESTORE_URL}/analytics/visitor_count`);
+      const data = await res.json();
+      return data.fields?.count?.integerValue || 0;
+    } catch (e) { return 0; }
+  }
+
+  // ── FORMAT TIMESTAMP ──
+  function fmtTime(ts) {
+    if (!ts) return "—";
+    const d = new Date(ts);
+    return d.toLocaleString("en-IN", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+  }
+  function isToday(ts) {
+    if (!ts) return false;
+    const d = new Date(ts); const now = new Date();
+    return d.getDate()===now.getDate() && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  }
+  function trunc(str, n) { return str && str.length > n ? str.slice(0,n)+"..." : (str || "—"); }
+
+  // ── LOAD ALL DATA ──
+  let allChats = [], allContacts = [];
+
+  async function loadData() {
+    document.getElementById("chats-body").innerHTML    = `<tr><td colspan="5" class="loading">Loading...</td></tr>`;
+    document.getElementById("contacts-body").innerHTML = `<tr><td colspan="7" class="loading">Loading...</td></tr>`;
+
+    const [chatDocs, contactDocs, visitors] = await Promise.all([
+      fetchCollection("chat_leads"),
+      fetchCollection("contact_leads"),
+      fetchVisitorCount()
+    ]);
+
+    allChats    = chatDocs;
+    allContacts = contactDocs;
+
+    // Stats
+    document.getElementById("stat-visitors").textContent = visitors;
+    document.getElementById("stat-chats").textContent    = chatDocs.length;
+    document.getElementById("stat-contacts").textContent = contactDocs.length;
+
+    const todayCount = [...chatDocs, ...contactDocs].filter(d => {
+      const ts = d.fields?.timestamp?.timestampValue || d.fields?.submittedAt?.timestampValue;
+      return isToday(ts);
+    }).length;
+    document.getElementById("stat-today").textContent = todayCount;
+
+    renderChats(chatDocs);
+    renderContacts(contactDocs);
+  }
+
+  // ── RENDER CHAT LEADS ──
+  function renderChats(docs) {
+    const tbody = document.getElementById("chats-body");
+    if (!docs.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty">No chat leads yet.</td></tr>`; return; }
+    tbody.innerHTML = docs.map((d, i) => {
+      const f   = d.fields || {};
+      const ts  = f.timestamp?.timestampValue;
+      const src = f.source?.stringValue || "chatbot";
+      return `<tr>
+        <td style="color:#9c9181">${docs.length - i}</td>
+        <td class="msg-cell"><div class="user-msg">${trunc(f.userMessage?.stringValue, 120)}</div></td>
+        <td class="msg-cell"><div class="bot-msg">${trunc(f.botReply?.stringValue, 150)}</div></td>
+        <td class="time-cell">${fmtTime(ts)}</td>
+        <td><span class="badge badge-chat">${src}</span></td>
+      </tr>`;
+    }).reverse().join("");
+  }
+
+  // ── RENDER CONTACT FORMS ──
+  function renderContacts(docs) {
+    const tbody = document.getElementById("contacts-body");
+    if (!docs.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty">No contact form submissions yet.</td></tr>`; return; }
+    tbody.innerHTML = docs.map((d, i) => {
+      const f  = d.fields || {};
+      const ts = f.submittedAt?.timestampValue;
+      return `<tr>
+        <td style="color:#9c9181">${docs.length - i}</td>
+        <td style="font-weight:500">${f.name?.stringValue || "—"}</td>
+        <td><a href="tel:${f.phone?.stringValue}" style="color:#d4ac58">${f.phone?.stringValue || "—"}</a></td>
+        <td><span class="badge badge-contact">${f.plan?.stringValue || "—"}</span></td>
+        <td class="msg-cell">${trunc(f.message?.stringValue, 100)}</td>
+        <td style="color:#9c9181;font-style:italic">${f.signature?.stringValue || "—"}</td>
+        <td class="time-cell">${fmtTime(ts)}</td>
+      </tr>`;
+    }).reverse().join("");
+  }
+
+  // ── SEARCH / FILTER ──
+  function filterTable() {
+    const q = document.getElementById("search-input").value.toLowerCase();
+    const filteredChats    = allChats.filter(d => {
+      const f = d.fields || {};
+      return (f.userMessage?.stringValue || "").toLowerCase().includes(q) ||
+             (f.botReply?.stringValue    || "").toLowerCase().includes(q);
+    });
+    const filteredContacts = allContacts.filter(d => {
+      const f = d.fields || {};
+      return (f.name?.stringValue    || "").toLowerCase().includes(q) ||
+             (f.phone?.stringValue   || "").toLowerCase().includes(q) ||
+             (f.message?.stringValue || "").toLowerCase().includes(q);
+    });
+    renderChats(filteredChats);
+    renderContacts(filteredContacts);
+  }
+
+  // Auto-refresh every 60 seconds
+  setInterval(() => { if (document.getElementById("dashboard").style.display !== "none") loadData(); }, 60000);
+</script>
+</body>
+</html>
