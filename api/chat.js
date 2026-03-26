@@ -9,38 +9,22 @@ module.exports = async function (req, res) {
     return res.status(200).end();
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // Safe Body Parsing
+  // Handle body parsing
   let body = req.body;
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (e) {}
   }
-  
   const message = body?.message;
-  if (!message) {
-    return res.status(400).json({ error: 'Message is required' });
-  }
 
-  // 2. API Key Check
+  // 2. Check API Key
   const apiKey = process.env.GROK_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ 
-      error: "API Key Missing", 
-      details: "The GROK_API_KEY is not set in Vercel." 
-    });
+    // Return 200 so the chatbot speaks the error!
+    return res.status(200).json({ reply: "🚨 DEBUG: Vercel Environment Variable mein GROK_API_KEY missing hai." });
   }
 
-  const systemPrompt = `
-    You are an expert sales assistant for Kuldeep Singh Bisht, a premium freelance web developer.
-    Recommend the Business Website Plan (₹18,000) and mention the April Special Discount.
-    Push them to use the WhatsApp button. Keep it under 2-3 sentences.
-  `;
-
   try {
-    // 3. Call Grok API (Updated to the active 2026 model)
+    // 3. Call Grok API
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -48,10 +32,10 @@ module.exports = async function (req, res) {
         "Authorization": `Bearer ${apiKey}` 
       },
       body: JSON.stringify({
-        model: "grok-3-mini", // <--- YAHAN CHANGE KIYA HAI (Naya model)
+        model: "grok-2-latest", 
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: message }
+          { role: "system", content: "You are a helpful assistant." },
+          { role: "user", content: message || "Hello" }
         ],
         temperature: 0.7
       })
@@ -59,22 +43,19 @@ module.exports = async function (req, res) {
 
     const data = await response.json();
 
-    // 4. Send exact error to frontend if Grok fails
+    // 4. THE MAGIC: Agar Grok reject kare, toh exact reason screen par dikhao
     if (!response.ok) {
-      return res.status(response.status).json({ 
-        error: "Grok API Rejected the Request", 
-        details: data 
+      let exactError = data.error?.message || data.error || JSON.stringify(data);
+      return res.status(200).json({ 
+        reply: `🚨 Grok API ne reject kiya. Reason: ${exactError}` 
       });
     }
 
-    // 5. Send AI reply back
+    // 5. Success
     const aiReply = data.choices[0].message.content;
     return res.status(200).json({ reply: aiReply });
 
   } catch (error) {
-    return res.status(500).json({ 
-      error: "Vercel Server Error", 
-      details: error.message 
-    });
+    return res.status(200).json({ reply: `🚨 Server Crash Error: ${error.message}` });
   }
 };
