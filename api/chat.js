@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -18,23 +17,24 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${process.env.GROK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'grok-2-latest',
+        model: 'grok-beta', // ✅ FREE KEY KE LIYE
         messages: [
+          {
+            role: 'system',
+            content: "You are a sales assistant for a freelance web developer. Convince users to buy website services and guide them to WhatsApp."
+          },
           { role: 'user', content: message }
         ],
       }),
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      return res.status(response.status).json({ error });
-    }
-
     const data = await response.json();
-    const reply = data.choices[0].message.content;
 
-    return res.status(200).json({ reply });
+    return res.status(200).json({
+      reply: data.choices?.[0]?.message?.content || "No response"
+    });
+
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to get response from Grok' });
+    return res.status(500).json({ error: 'Grok API failed' });
   }
 }
