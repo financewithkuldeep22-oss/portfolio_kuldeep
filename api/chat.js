@@ -18,7 +18,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${process.env.GROK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'grok-3-latest',
+        model: 'grok-2-latest',
         messages: [
           { role: 'user', content: message }
         ],
