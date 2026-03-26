@@ -1,43 +1,45 @@
 module.exports = async function (req, res) {
+  // 1. CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*'); 
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   let body = req.body;
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (e) {}
   }
   
-  const message = body?.message;
-  if (!message) {
-    return res.status(400).json({ error: 'Message is required' });
+  // NAYA: Ab hum sirf message nahi, balki puri history receive kar rahe hain
+  const { history } = body;
+  if (!history || !Array.isArray(history)) {
+    return res.status(400).json({ error: 'Chat history is required' });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: "API Key Missing" });
-  }
+  if (!apiKey) return res.status(500).json({ error: "API Key Missing" });
 
-  // 🧠 THE NEW SMART AI BRAIN
+  // 🧠 THE ULTIMATE SALES BRAIN (Aapka Business Logic)
   const systemPrompt = `
-    You are a friendly and expert sales assistant for Kuldeep Singh Bisht, a premium freelance web developer in India.
-    
-    CRITICAL RULES:
-    1. ALWAYS read and respond directly to what the user just said. If they say "hi", greet them back naturally and ask how you can help them today.
-    2. Do NOT just throw the sales pitch immediately. Build a tiny bit of context first.
-    3. If they ask about pricing, plans, or want to check services, THEN recommend the "Business Website Plan (₹18,000)".
-    4. When appropriate, mention the "April Special Discount" to create urgency.
-    5. Keep your responses short, conversational, and under 2-3 sentences.
-    6. Always guide them to click the "Chat on WhatsApp" button to finalize details with Kuldeep directly.
+    You are 'KSB AI', the expert sales assistant for Kuldeep Singh Bisht. Kuldeep is a premium freelance web developer in India who builds high-converting websites, especially for travel agencies and businesses.
+
+    YOUR MISSION: Convince the user to buy a website and push them to chat with Kuldeep on WhatsApp.
+
+    KULDEEP'S PRICING & FEATURES (Always use this info if asked):
+    1. Starter Website (₹10,000 / $120): Up to 5 pages, modern UI, basic WhatsApp link. Takes 15-20 days. Best for individuals.
+    2. Business Website (₹18,000 / $215): **HIGHLY RECOMMENDED**. 10+ pages, custom inquiry forms, WhatsApp Lead Gen flow, fast speed. Takes 20-25 days. Best for small businesses.
+    3. Advanced App/Web (₹30,000+ / $360+): Custom web apps, CRM, Dashboards (like Redcliffe or Juvius CRM). Secure Auth, Payment integrations. Minimum 1 month.
+
+    SALES STRATEGY & RULES:
+    - CONVINCE: If they are confused, strongly recommend the "Business Website (₹18,000)" as it gives the best ROI and Lead Generation.
+    - URGENCY: Mention the "April Special Discount" (valid till 30 April) to create urgency.
+    - FREELANCER ADVANTAGE: Remind them that working with Kuldeep means direct communication and no expensive agency middlemen.
+    - TONE: Professional, friendly, confident, and concise (never write more than 3-4 short sentences).
+    - CONTEXT: Read the user's previous messages in the chat history. Do not repeat yourself.
+    - CALL TO ACTION: End your successful pitches by telling them to click the green "Chat on WhatsApp" button on the screen to finalize details with Kuldeep.
   `;
 
   try {
@@ -48,15 +50,15 @@ module.exports = async function (req, res) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text: message }] }],
-        generationConfig: { temperature: 0.7 }
+        contents: history, // Pura chat history yahan bhej diya!
+        generationConfig: { temperature: 0.6 } // Thoda kam temperature taaki precise sales pitch de
       })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: "API Rejected", details: data });
+      return res.status(response.status).json({ error: "Gemini API Error", details: data });
     }
 
     const aiReply = data.candidates[0].content.parts[0].text;
